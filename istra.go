@@ -9,17 +9,17 @@ var (
 	ErrConsumingChannel = errors.New("error consuming queue")
 )
 
-type Connection interface {
-	Channel() (Channel, error)
-	NotifyOnClose() chan error
+type connection interface {
+	channel() (channel, error)
+	notifyOnClose() chan error
 }
 
-type Messenger interface {
-	Msg() []byte
+type messenger interface {
+	msg() []byte
 }
 
-type Channel interface {
-	Consume(queue, consumer string, autoAck, exclusive, noLocal, noWait bool, args interface{}) (<-chan Messenger, error)
+type channel interface {
+	consume(queue string, autoAck, exclusive, noLocal, noWait bool) (<-chan messenger, error)
 }
 
 type QueueConf struct {
@@ -30,13 +30,13 @@ type QueueConf struct {
 	NoWait    bool
 }
 
-func ProcessQueue(amqp Connection, conf QueueConf, f func([]byte)) {
-	ch, err := amqp.Channel()
+func processQueue(amqp connection, conf QueueConf, f func([]byte)) {
+	ch, err := amqp.channel()
 	if err != nil {
 		panic(ErrCreatingChannel)
 	}
 
-	messenger, err := ch.Consume(conf.Name, "", conf.AutoAck, conf.Exclusive, conf.NoLocal, conf.NoWait, nil)
+	messenger, err := ch.consume(conf.Name, conf.AutoAck, conf.Exclusive, conf.NoLocal, conf.NoWait)
 	if err != nil {
 		panic(ErrConsumingChannel)
 	}
@@ -44,8 +44,8 @@ func ProcessQueue(amqp Connection, conf QueueConf, f func([]byte)) {
 	for {
 		select {
 		case m := <-messenger:
-			f(m.Msg())
-		case _ = <-amqp.NotifyOnClose():
+			f(m.msg())
+		case _ = <-amqp.notifyOnClose():
 			return
 		}
 	}

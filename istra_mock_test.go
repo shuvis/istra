@@ -1,51 +1,51 @@
 package istra
 
-type AmqpMock struct {
-	Ch        Channel
-	Calls     []string
-	CloseChan chan error
+type amqpMock struct {
+	ch        channel
+	calls     []string
+	closeChan chan error
 }
 
-func (a *AmqpMock) Channel() (Channel, error) {
-	a.Calls = append(a.Calls, channel)
-	return a.Ch, nil
+func (a *amqpMock) channel() (channel, error) {
+	a.calls = append(a.calls, channelMethod)
+	return a.ch, nil
 }
 
-func (a *AmqpMock) NotifyOnClose() chan error {
-	return a.CloseChan
+func (a *amqpMock) notifyOnClose() chan error {
+	return a.closeChan
 }
 
-type AmqpChannelErrorMock struct {
+type amqpChannelErrorMock struct {
 }
 
-type MessengerMock struct {
+type messengerMock struct {
 	Message []byte
 }
 
-func (m *MessengerMock) Msg() []byte {
+func (m *messengerMock) msg() []byte {
 	return m.Message
 }
 
-type ErrorChannel struct {
+type errorChannel struct {
 }
 
-func (ech *ErrorChannel) Consume(queue, consumer string, autoAck, exclusive, noLocal, noWait bool, args interface{}) (<-chan Messenger, error) {
+func (ech *errorChannel) consume(queue string, autoAck, exclusive, noLocal, noWait bool) (<-chan messenger, error) {
 	return nil, ErrConsumingChannel
 }
 
-type MessengerChannel struct {
-	MsgChan <-chan Messenger
+type messengerChannel struct {
+	msgChan <-chan messenger
 }
 
-func (ch *MessengerChannel) Consume(queue, consumer string, autoAck, exclusive, noLocal, noWait bool, args interface{}) (<-chan Messenger, error) {
-	return ch.MsgChan, nil
+func (ch *messengerChannel) consume(queue string, autoAck, exclusive, noLocal, noWait bool) (<-chan messenger, error) {
+	return ch.msgChan, nil
 }
 
-type ConsumerChannel struct {
+type consumerChannel struct {
 	Conf QueueConf
 }
 
-func (ch *ConsumerChannel) Consume(queue, consumer string, autoAck, exclusive, noLocal, noWait bool, args interface{}) (<-chan Messenger, error) {
+func (ch *consumerChannel) consume(queue string, autoAck, exclusive, noLocal, noWait bool) (<-chan messenger, error) {
 	ch.Conf.Name = queue
 	ch.Conf.AutoAck = autoAck
 	ch.Conf.Exclusive = exclusive
@@ -54,10 +54,10 @@ func (ch *ConsumerChannel) Consume(queue, consumer string, autoAck, exclusive, n
 	return nil, nil
 }
 
-func (err *AmqpChannelErrorMock) Channel() (Channel, error) {
+func (err *amqpChannelErrorMock) channel() (channel, error) {
 	return nil, ErrCreatingChannel
 }
 
-func (err *AmqpChannelErrorMock) NotifyOnClose() chan error {
+func (err *amqpChannelErrorMock) notifyOnClose() chan error {
 	return nil
 }
