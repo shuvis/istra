@@ -2,20 +2,8 @@ package istra
 
 import "github.com/streadway/amqp"
 
-func New(conn *amqp.Connection) QueueProcessor {
-	return &queueProcessor{&connectionWrapper{conn}}
-}
-
-type QueueProcessor interface {
-	Process(conf QueueConf, f func([]byte))
-}
-
-type queueProcessor struct {
-	conn *connectionWrapper
-}
-
-func (qp *queueProcessor) Process(conf QueueConf, f func([]byte)) {
-	processQueue(qp.conn, conf, f)
+func ProcessQueue(conn *amqp.Connection, conf QueueConf, f func([]byte)) {
+	processQueue(&connectionWrapper{conn}, conf, f)
 }
 
 type connectionWrapper struct {
