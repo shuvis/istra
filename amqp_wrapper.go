@@ -1,6 +1,6 @@
 package istra
 
-import "amqp"
+import "github.com/streadway/amqp"
 
 func New(conn *amqp.Connection) QueueProcessor {
 	return &queueProcessor{&connectionWrapper{conn}}
