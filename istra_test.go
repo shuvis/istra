@@ -2,6 +2,7 @@ package istra
 
 import (
 	"errors"
+	"github.com/streadway/amqp"
 	"reflect"
 	"sync"
 	"testing"
@@ -16,40 +17,40 @@ func Test_ProcessQueue(t *testing.T) {
 
 	t.Run("test channel creation call", func(t *testing.T) {
 		closeChan := make(chan error)
-		amqp := &amqpMock{ch: &messengerChannel{}, closeChan: closeChan}
+		conn := &connectionMock{ch: &messengerChannel{}, closeChan: closeChan}
 		wg := sync.WaitGroup{}
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			processQueue(amqp, QueueConf{}, func(msg []byte) {})
+			processQueue(conn, QueueConf{}, func(d amqp.Delivery) {})
 		}()
 		closeChan <- errors.New("channel closed")
 		wg.Wait()
 
 		want := []string{channelMethod}
-		if !reflect.DeepEqual(want, amqp.calls) {
-			t.Errorf("wanted calls %v got %v", want, amqp.calls)
+		if !reflect.DeepEqual(want, conn.calls) {
+			t.Errorf("wanted calls %v got %v", want, conn.calls)
 		}
 	})
 
 	t.Run("test channel call return error", func(t *testing.T) {
-		amqp := &amqpChannelErrorMock{}
+		conn := &amqpChannelErrorMock{}
 		assertPanic(t, ErrCreatingChannel, func() {
-			processQueue(amqp, QueueConf{}, func(msg []byte) {})
+			processQueue(conn, QueueConf{}, func(d amqp.Delivery) {})
 		})
 	})
 
 	t.Run("test channel consumed correct config", func(t *testing.T) {
 		closeChan := make(chan error)
 		channel := consumerChannel{}
-		amqp := &amqpMock{ch: &channel, closeChan: closeChan}
+		conn := &connectionMock{ch: &channel, closeChan: closeChan}
 		conf := QueueConf{Name: channelName, AutoAck: true, Exclusive: true, NoLocal: true, NoWait: true}
 
 		wg := sync.WaitGroup{}
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			processQueue(amqp, conf, func(msg []byte) {})
+			processQueue(conn, conf, func(d amqp.Delivery) {})
 		}()
 		closeChan <- errors.New("channel closed")
 		wg.Wait()
@@ -60,14 +61,14 @@ func Test_ProcessQueue(t *testing.T) {
 	t.Run("test channel consumed default config", func(t *testing.T) {
 		closeChan := make(chan error)
 		channel := consumerChannel{}
-		amqp := &amqpMock{ch: &channel, closeChan: closeChan}
+		conn := &connectionMock{ch: &channel, closeChan: closeChan}
 		conf := QueueConf{Name: channelName}
 
 		wg := sync.WaitGroup{}
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			processQueue(amqp, conf, func(msg []byte) {})
+			processQueue(conn, conf, func(d amqp.Delivery) {})
 		}()
 		closeChan <- errors.New("channel closed")
 		wg.Wait()
@@ -77,30 +78,30 @@ func Test_ProcessQueue(t *testing.T) {
 
 	t.Run("test channel return error", func(t *testing.T) {
 		channel := errorChannel{}
-		amqp := &amqpMock{ch: &channel}
+		conn := &connectionMock{ch: &channel}
 
 		assertPanic(t, ErrConsumingChannel, func() {
-			processQueue(amqp, QueueConf{}, func(msg []byte) {})
+			processQueue(conn, QueueConf{}, func(d amqp.Delivery) {})
 		})
 	})
 
 	t.Run("test channel returning messages", func(t *testing.T) {
-		messengerChan := make(chan messenger)
+		messengerChan := make(chan amqp.Delivery)
 		closeChan := make(chan error)
 		channel := messengerChannel{msgChan: messengerChan}
-		amqp := &amqpMock{ch: &channel, closeChan: closeChan}
+		conn := &connectionMock{ch: &channel, closeChan: closeChan}
 		var result []string
 		wg := sync.WaitGroup{}
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			processQueue(amqp, QueueConf{}, func(msg []byte) {
-				result = append(result, string(msg))
+			processQueue(conn, QueueConf{}, func(d amqp.Delivery) {
+				result = append(result, string(d.Body))
 			})
 		}()
-		messengerChan <- &messengerMock{Message: []byte("1")}
-		messengerChan <- &messengerMock{Message: []byte("2")}
-		messengerChan <- &messengerMock{Message: []byte("3")}
+		messengerChan <- amqp.Delivery{Body: []byte("1")}
+		messengerChan <- amqp.Delivery{Body: []byte("2")}
+		messengerChan <- amqp.Delivery{Body: []byte("3")}
 		closeChan <- errors.New("channel closed")
 
 		want := []string{"1", "2", "3"}

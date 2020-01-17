@@ -2,6 +2,7 @@ package istra
 
 import (
 	"errors"
+	"github.com/streadway/amqp"
 )
 
 var (
@@ -14,37 +15,25 @@ type connection interface {
 	notifyOnClose() chan error
 }
 
-type messenger interface {
-	msg() []byte
-}
-
 type channel interface {
-	consume(queue string, autoAck, exclusive, noLocal, noWait bool) (<-chan messenger, error)
+	consume(queue string, autoAck, exclusive, noLocal, noWait bool) (<-chan amqp.Delivery, error)
 }
 
-type QueueConf struct {
-	Name      string
-	AutoAck   bool
-	Exclusive bool
-	NoLocal   bool
-	NoWait    bool
-}
-
-func processQueue(amqp connection, conf QueueConf, f func([]byte)) {
+func processQueue(amqp connection, conf QueueConf, f func(amqp.Delivery)) {
 	ch, err := amqp.channel()
 	if err != nil {
 		panic(ErrCreatingChannel)
 	}
 
-	messenger, err := ch.consume(conf.Name, conf.AutoAck, conf.Exclusive, conf.NoLocal, conf.NoWait)
+	deliveries, err := ch.consume(conf.Name, conf.AutoAck, conf.Exclusive, conf.NoLocal, conf.NoWait)
 	if err != nil {
 		panic(ErrConsumingChannel)
 	}
 
 	for {
 		select {
-		case m := <-messenger:
-			f(m.msg())
+		case d := <-deliveries:
+			f(d)
 		case _ = <-amqp.notifyOnClose():
 			return
 		}

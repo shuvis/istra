@@ -1,43 +1,37 @@
 package istra
 
-type amqpMock struct {
+import "github.com/streadway/amqp"
+
+type connectionMock struct {
 	ch        channel
 	calls     []string
 	closeChan chan error
 }
 
-func (a *amqpMock) channel() (channel, error) {
+func (a *connectionMock) channel() (channel, error) {
 	a.calls = append(a.calls, channelMethod)
 	return a.ch, nil
 }
 
-func (a *amqpMock) notifyOnClose() chan error {
+func (a *connectionMock) notifyOnClose() chan error {
 	return a.closeChan
 }
 
 type amqpChannelErrorMock struct {
 }
 
-type messengerMock struct {
-	Message []byte
-}
-
-func (m *messengerMock) msg() []byte {
-	return m.Message
-}
-
 type errorChannel struct {
 }
 
-func (ech *errorChannel) consume(queue string, autoAck, exclusive, noLocal, noWait bool) (<-chan messenger, error) {
+func (ech *errorChannel) consume(queue string, autoAck, exclusive, noLocal, noWait bool) (<-chan amqp.Delivery, error) {
 	return nil, ErrConsumingChannel
 }
 
 type messengerChannel struct {
-	msgChan <-chan messenger
+	msgChan <-chan amqp.Delivery
 }
 
-func (ch *messengerChannel) consume(queue string, autoAck, exclusive, noLocal, noWait bool) (<-chan messenger, error) {
+func (ch *messengerChannel) consume(queue string, autoAck, exclusive, noLocal, noWait bool) (<-chan amqp.Delivery, error) {
 	return ch.msgChan, nil
 }
 
@@ -45,7 +39,7 @@ type consumerChannel struct {
 	Conf QueueConf
 }
 
-func (ch *consumerChannel) consume(queue string, autoAck, exclusive, noLocal, noWait bool) (<-chan messenger, error) {
+func (ch *consumerChannel) consume(queue string, autoAck, exclusive, noLocal, noWait bool) (<-chan amqp.Delivery, error) {
 	ch.Conf.Name = queue
 	ch.Conf.AutoAck = autoAck
 	ch.Conf.Exclusive = exclusive
