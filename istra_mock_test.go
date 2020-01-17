@@ -27,11 +27,11 @@ func (ech *errorChannel) consume(queue string, autoAck, exclusive, noLocal, noWa
 	return nil, ErrConsumingChannel
 }
 
-type messengerChannel struct {
+type deliveryChannel struct {
 	msgChan <-chan amqp.Delivery
 }
 
-func (ch *messengerChannel) consume(queue string, autoAck, exclusive, noLocal, noWait bool) (<-chan amqp.Delivery, error) {
+func (ch *deliveryChannel) consume(queue string, autoAck, exclusive, noLocal, noWait bool) (<-chan amqp.Delivery, error) {
 	return ch.msgChan, nil
 }
 

@@ -17,7 +17,7 @@ func Test_ProcessQueue(t *testing.T) {
 
 	t.Run("test channel() is called", func(t *testing.T) {
 		closeChan := make(chan error)
-		conn := &connectionMock{ch: &messengerChannel{}, closeChan: closeChan}
+		conn := &connectionMock{ch: &deliveryChannel{}, closeChan: closeChan}
 
 		wg := processWithWaitingGroup(func() {
 			processQueue(conn, QueueConf{}, func(d amqp.Delivery) {})
@@ -78,9 +78,9 @@ func Test_ProcessQueue(t *testing.T) {
 	})
 
 	t.Run("test deliveries processing", func(t *testing.T) {
-		messengerChan := make(chan amqp.Delivery)
+		deliveries := make(chan amqp.Delivery)
 		closeChan := make(chan error)
-		channel := messengerChannel{msgChan: messengerChan}
+		channel := deliveryChannel{msgChan: deliveries}
 		conn := &connectionMock{ch: &channel, closeChan: closeChan}
 		var result []string
 		wg := processWithWaitingGroup(func() {
@@ -88,9 +88,9 @@ func Test_ProcessQueue(t *testing.T) {
 				result = append(result, string(d.Body))
 			})
 		})
-		messengerChan <- amqp.Delivery{Body: []byte("1")}
-		messengerChan <- amqp.Delivery{Body: []byte("2")}
-		messengerChan <- amqp.Delivery{Body: []byte("3")}
+		deliveries <- amqp.Delivery{Body: []byte("1")}
+		deliveries <- amqp.Delivery{Body: []byte("2")}
+		deliveries <- amqp.Delivery{Body: []byte("3")}
 		closeChan <- errors.New("channel closed")
 
 		want := []string{"1", "2", "3"}
