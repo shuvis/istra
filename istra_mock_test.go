@@ -3,55 +3,77 @@ package istra
 import "github.com/streadway/amqp"
 
 type connectionMock struct {
-	ch        channel
-	calls     []string
+	consumeChanneler
 	closeChan chan error
 }
 
-func (a *connectionMock) channel() (channel, error) {
-	a.calls = append(a.calls, channelMethod)
-	return a.ch, nil
+func (cm *connectionMock) notifyOnClose() chan error {
+	return cm.closeChan
 }
 
-func (a *connectionMock) notifyOnClose() chan error {
-	return a.closeChan
+type consumeChannelerMock struct {
+	ch    consumer
+	err   error
+	calls []string
 }
 
-type amqpChannelErrorMock struct {
+func (ccm *consumeChannelerMock) channel() (consumer, error) {
+	ccm.calls = append(ccm.calls, channelMethod)
+	return ccm.ch, ccm.err
 }
 
-type errorChannel struct {
-}
-
-func (ech *errorChannel) consume(queue string, autoAck, exclusive, noLocal, noWait bool) (<-chan amqp.Delivery, error) {
-	return nil, ErrConsumingChannel
-}
-
-type deliveryChannel struct {
+type consumerMock struct {
+	Conf    QueueConf
+	err     error
 	msgChan <-chan amqp.Delivery
 }
 
-func (ch *deliveryChannel) consume(queue string, autoAck, exclusive, noLocal, noWait bool) (<-chan amqp.Delivery, error) {
-	return ch.msgChan, nil
+func (cm *consumerMock) consume(queue string, autoAck, exclusive, noLocal, noWait bool) (<-chan amqp.Delivery, error) {
+	cm.Conf.Name = queue
+	cm.Conf.AutoAck = autoAck
+	cm.Conf.Exclusive = exclusive
+	cm.Conf.NoLocal = noLocal
+	cm.Conf.NoWait = noWait
+	return cm.msgChan, cm.err
 }
 
-type consumerChannel struct {
-	Conf QueueConf
+type bindChannelMock struct {
+	b     binder
+	err   error
+	calls []string
 }
 
-func (ch *consumerChannel) consume(queue string, autoAck, exclusive, noLocal, noWait bool) (<-chan amqp.Delivery, error) {
-	ch.Conf.Name = queue
-	ch.Conf.AutoAck = autoAck
-	ch.Conf.Exclusive = exclusive
-	ch.Conf.NoLocal = noLocal
-	ch.Conf.NoWait = noWait
-	return nil, nil
+func (bcm *bindChannelMock) channel() (binder, error) {
+	bcm.calls = append(bcm.calls, channelMethod)
+	return bcm.b, bcm.err
 }
 
-func (err *amqpChannelErrorMock) channel() (channel, error) {
-	return nil, ErrCreatingChannel
+type binderMock struct {
+	bindErr       error
+	declareErr    error
+	unbindErr     error
+	calls         []string
+	passedStructs []interface{}
 }
 
-func (err *amqpChannelErrorMock) notifyOnClose() chan error {
-	return nil
+func (bm *binderMock) bind(b Bind) error {
+	bm.passedStructs = append(bm.passedStructs, b)
+	bm.calls = append(bm.calls, bind)
+	return bm.bindErr
+}
+
+func (bm *binderMock) declare(conf DeclareConf) error {
+	bm.passedStructs = append(bm.passedStructs, conf)
+	bm.calls = append(bm.calls, declare)
+	return bm.declareErr
+}
+
+func (bm *binderMock) unbind(u UnBind) error {
+	bm.passedStructs = append(bm.passedStructs, u)
+	bm.calls = append(bm.calls, unbind)
+	return bm.unbindErr
+}
+
+func (bm *binderMock) close() {
+	bm.calls = append(bm.calls, closeMethod)
 }

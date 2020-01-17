@@ -9,45 +9,50 @@ import (
 )
 
 const (
-	channelMethod = "channel"
+	channelMethod = "consumer()"
+	closeMethod   = "close()"
 	channelName   = "name"
+	declare       = "declare"
+	bind          = "bind"
+	unbind        = "unbind"
 )
 
-func Test_ProcessQueue(t *testing.T) {
+func Test_consumeQueue(t *testing.T) {
 
-	t.Run("test channel() is called", func(t *testing.T) {
+	t.Run("test consumer() is called", func(t *testing.T) {
 		closeChan := make(chan error)
-		conn := &connectionMock{ch: &deliveryChannel{}, closeChan: closeChan}
+		chMock := consumeChannelerMock{ch: &consumerMock{}}
+		conn := &connectionMock{consumeChanneler: &chMock, closeChan: closeChan}
 
 		wg := processWithWaitingGroup(func() {
-			processQueue(conn, QueueConf{}, func(d amqp.Delivery) {})
+			consumeQueue(conn, QueueConf{}, func(d amqp.Delivery) {})
 		})
-		closeChan <- errors.New("channel closed")
+		closeChan <- errors.New("consumer closed")
 		wg.Wait()
 
 		want := []string{channelMethod}
-		if !reflect.DeepEqual(want, conn.calls) {
-			t.Errorf("wanted calls %v got %v", want, conn.calls)
+		if !reflect.DeepEqual(want, chMock.calls) {
+			t.Errorf("wanted calls %v got %v", want, chMock.calls)
 		}
 	})
 
-	t.Run("test channel() return error", func(t *testing.T) {
-		conn := &amqpChannelErrorMock{}
+	t.Run("test consumer() return error", func(t *testing.T) {
+		conn := &connectionMock{consumeChanneler: &consumeChannelerMock{err: errors.New("error")}}
 		assertPanic(t, ErrCreatingChannel, func() {
-			processQueue(conn, QueueConf{}, func(d amqp.Delivery) {})
+			consumeQueue(conn, QueueConf{}, func(d amqp.Delivery) {})
 		})
 	})
 
-	t.Run("test QueueConf passed to channel.consume(QueueConf)", func(t *testing.T) {
+	t.Run("test QueueConf passed to consumer.consume(QueueConf)", func(t *testing.T) {
 		closeChan := make(chan error)
-		channel := consumerChannel{}
-		conn := &connectionMock{ch: &channel, closeChan: closeChan}
+		channel := consumerMock{}
+		conn := &connectionMock{consumeChanneler: &consumeChannelerMock{ch: &channel}, closeChan: closeChan}
 		conf := QueueConf{Name: channelName, AutoAck: true, Exclusive: true, NoLocal: true, NoWait: true}
 
 		wg := processWithWaitingGroup(func() {
-			processQueue(conn, conf, func(d amqp.Delivery) {})
+			consumeQueue(conn, conf, func(d amqp.Delivery) {})
 		})
-		closeChan <- errors.New("channel closed")
+		closeChan <- errors.New("consumer closed")
 		wg.Wait()
 
 		assertConfig(t, channel.Conf, channelName, true, true, true, true)
@@ -55,43 +60,42 @@ func Test_ProcessQueue(t *testing.T) {
 
 	t.Run("test default QueueConf is passed", func(t *testing.T) {
 		closeChan := make(chan error)
-		channel := consumerChannel{}
-		conn := &connectionMock{ch: &channel, closeChan: closeChan}
+		channel := consumerMock{}
+		conn := &connectionMock{consumeChanneler: &consumeChannelerMock{ch: &channel}, closeChan: closeChan}
 		conf := QueueConf{Name: channelName}
 
 		wg := processWithWaitingGroup(func() {
-			processQueue(conn, conf, func(d amqp.Delivery) {})
+			consumeQueue(conn, conf, func(d amqp.Delivery) {})
 		})
-		closeChan <- errors.New("channel closed")
+		closeChan <- errors.New("consumer closed")
 		wg.Wait()
 
 		assertConfig(t, channel.Conf, channelName, false, false, false, false)
 	})
 
 	t.Run("test consume() return error", func(t *testing.T) {
-		channel := errorChannel{}
-		conn := &connectionMock{ch: &channel}
+		conn := &connectionMock{consumeChanneler: &consumeChannelerMock{ch: &consumerMock{err: errors.New("error")}}}
 
 		assertPanic(t, ErrConsumingChannel, func() {
-			processQueue(conn, QueueConf{}, func(d amqp.Delivery) {})
+			consumeQueue(conn, QueueConf{}, func(d amqp.Delivery) {})
 		})
 	})
 
 	t.Run("test deliveries processing", func(t *testing.T) {
 		deliveries := make(chan amqp.Delivery)
 		closeChan := make(chan error)
-		channel := deliveryChannel{msgChan: deliveries}
-		conn := &connectionMock{ch: &channel, closeChan: closeChan}
+		channel := consumerMock{msgChan: deliveries}
+		conn := &connectionMock{consumeChanneler: &consumeChannelerMock{ch: &channel}, closeChan: closeChan}
 		var result []string
 		wg := processWithWaitingGroup(func() {
-			processQueue(conn, QueueConf{}, func(d amqp.Delivery) {
+			consumeQueue(conn, QueueConf{}, func(d amqp.Delivery) {
 				result = append(result, string(d.Body))
 			})
 		})
 		deliveries <- amqp.Delivery{Body: []byte("1")}
 		deliveries <- amqp.Delivery{Body: []byte("2")}
 		deliveries <- amqp.Delivery{Body: []byte("3")}
-		closeChan <- errors.New("channel closed")
+		closeChan <- errors.New("consumer closed")
 
 		want := []string{"1", "2", "3"}
 
@@ -102,12 +106,125 @@ func Test_ProcessQueue(t *testing.T) {
 	})
 }
 
-func processWithWaitingGroup(fn func()) *sync.WaitGroup {
+func Test_QueueBind(t *testing.T) {
+
+	t.Run("test bindQueues() returns error", func(t *testing.T) {
+		closer := &binderMock{}
+		err := bindQueues(&bindChannelMock{err: errors.New("error"), b: &binderMock{}}, Bindings{})
+
+		if err != ErrCreatingChannel {
+			t.Errorf("wanted '%v' got '%v'", ErrCreatingChannel, err)
+		}
+
+		if len(closer.calls) > 0 {
+			t.Errorf("didn't expected calls got %v", closer.calls)
+		}
+	})
+
+	t.Run("test consumer() and close() are called", func(t *testing.T) {
+		closer := &binderMock{}
+		chMock := &bindChannelMock{b: closer}
+		err := bindQueues(chMock, Bindings{})
+
+		if err != nil {
+			t.Errorf("didn't expected error, got '%v'", err)
+		}
+
+		wantChannel := []string{channelMethod}
+		if !reflect.DeepEqual(wantChannel, chMock.calls) {
+			t.Errorf("wanted calls %v got %v", wantChannel, chMock.calls)
+		}
+
+		wantCloser := []string{closeMethod}
+		if !reflect.DeepEqual(wantCloser, closer.calls) {
+			t.Errorf("wanted calls %v got %v", wantCloser, closer.calls)
+		}
+	})
+
+	t.Run("test bindQueues()", func(t *testing.T) {
+		declareConf := DeclareConf{}
+		bindErrorQueue := Bind{Exchange: "myExchange", Queue: "errorQueue", Topic: "*.ERROR"}
+		bindWarningQueue := Bind{Exchange: "myExchange", Queue: "warningQueue", Topic: "*.WARNING"}
+		unBindQueue := UnBind{Exchange: "myExchange", Queue: "infoQueue", Topic: "*.INFO"}
+		bindings := Bindings{
+			Declare{declareConf},
+			bindErrorQueue,
+			DeclareBind{Bind: bindWarningQueue, Conf: declareConf},
+			unBindQueue,
+		}
+
+		binder := &binderMock{}
+		err := bindQueues(&bindChannelMock{b: binder}, bindings)
+
+		if err != nil {
+			t.Errorf("didn't expected error, got '%v'", err)
+		}
+
+		want := []string{declare, bind, declare, bind, unbind, closeMethod}
+		if !reflect.DeepEqual(want, binder.calls) {
+			t.Errorf("wanted calls %v got %v", want, binder.calls)
+		}
+		wantBindings := make([]interface{}, 0)
+		wantBindings = append(wantBindings, declareConf, bindErrorQueue, declareConf, bindWarningQueue, unBindQueue)
+
+		if !reflect.DeepEqual(wantBindings, binder.passedStructs) {
+			t.Errorf("wanted passedStructs %v\ngot %v", bindings, binder.passedStructs)
+		}
+	})
+
+	t.Run("test unknown binding()", func(t *testing.T) {
+		bindings := Bindings{
+			struct{}{},
+		}
+		binder := &binderMock{}
+		err := bindQueues(&bindChannelMock{b: binder}, bindings)
+
+		if err != UnknownBinding {
+			t.Errorf("wanted '%v' got '%v'", UnknownBinding, err)
+		}
+
+		want := []string{closeMethod}
+		if !reflect.DeepEqual(want, binder.calls) {
+			t.Errorf("wanted calls %v got %v", want, binder.calls)
+		}
+	})
+
+	t.Run("test bindQueues() return error", func(t *testing.T) {
+		err := errors.New("error")
+		tests := []struct {
+			name       string
+			bindings   Bindings
+			bindErr    error
+			declareErr error
+			unbindErr  error
+			wantCalls  []string
+		}{
+			{"test binding return error", Bindings{DeclareBind{Bind: Bind{}, Conf: DeclareConf{}}, Bind{}}, nil, err, nil, []string{declare, closeMethod}},
+			{"test declare() return error", Bindings{DeclareBind{Bind: Bind{}, Conf: DeclareConf{}}, Bind{}}, err, nil, nil, []string{declare, bind, closeMethod}},
+			{"test unbind() return error", Bindings{DeclareBind{Bind: Bind{}, Conf: DeclareConf{}}, UnBind{}, Bind{}}, nil, nil, err, []string{declare, bind, unbind, closeMethod}},
+		}
+
+		for _, tt := range tests {
+			binder := &binderMock{bindErr: tt.bindErr, declareErr: tt.declareErr, unbindErr: tt.unbindErr}
+			got := bindQueues(&bindChannelMock{b: binder}, tt.bindings)
+
+			if got != err {
+				t.Errorf("expected error '%v, got '%v'", err, got)
+			}
+
+			if !reflect.DeepEqual(tt.wantCalls, binder.calls) {
+				t.Errorf("wanted calls %v got %v", tt.wantCalls, binder.calls)
+			}
+		}
+	})
+}
+
+func processWithWaitingGroup(f func()) *sync.WaitGroup {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		fn()
+		f()
 	}()
 	return &wg
 }
