@@ -173,23 +173,6 @@ func Test_QueueBind(t *testing.T) {
 		}
 	})
 
-	t.Run("test unknown binding()", func(t *testing.T) {
-		bindings := Bindings{
-			struct{}{},
-		}
-		binder := &binderMock{}
-		err := bindQueues(&bindChannelMock{b: binder}, bindings)
-
-		if err != UnknownBinding {
-			t.Errorf("wanted '%v' got '%v'", UnknownBinding, err)
-		}
-
-		want := []string{closeMethod}
-		if !reflect.DeepEqual(want, binder.calls) {
-			t.Errorf("wanted calls %v got %v", want, binder.calls)
-		}
-	})
-
 	t.Run("test bindQueues() return error", func(t *testing.T) {
 		err := errors.New("error")
 		dQueue := "d queue"
@@ -199,12 +182,11 @@ func Test_QueueBind(t *testing.T) {
 			bindErr    error
 			declareErr error
 			unbindErr  error
-			errorMsg   string
 			wantCalls  []string
 		}{
-			{"test declare() return error", Bindings{DeclareBind{Bind: Bind{}, Declare: Declare{Name: dQueue}}, Bind{}}, nil, err, nil, "declaring queue : 'd queue' failed: error", []string{declare, closeMethod}},
-			{"test bind() return error", Bindings{DeclareBind{Bind: Bind{Name: "b queue"}, Declare: Declare{}}, Bind{}}, err, nil, nil, "binding queue : 'b queue' failed: error", []string{declare, bind, closeMethod}},
-			{"test unbind() return error", Bindings{DeclareBind{Bind: Bind{}, Declare: Declare{}}, UnBind{Queue: "u queue"}, Bind{}}, nil, nil, err, "unbinding queue : 'u queue' failed: error", []string{declare, bind, unbind, closeMethod}},
+			{"test declare() return error", Bindings{DeclareBind{Bind: Bind{}, Declare: Declare{Name: dQueue}}, Bind{}}, nil, err, nil, []string{declare, closeMethod}},
+			{"test bind() return error", Bindings{DeclareBind{Bind: Bind{Name: "b queue"}, Declare: Declare{}}, Bind{}}, err, nil, nil, []string{declare, bind, closeMethod}},
+			{"test unbind() return error", Bindings{DeclareBind{Bind: Bind{}, Declare: Declare{}}, UnBind{Queue: "u queue"}, Bind{}}, nil, nil, err, []string{declare, bind, unbind, closeMethod}},
 		}
 
 		for _, tt := range tests {
@@ -215,8 +197,9 @@ func Test_QueueBind(t *testing.T) {
 				t.Errorf("expected error '%v, got '%v'", err, got)
 			}
 
-			if got.Error() != tt.errorMsg {
-				t.Errorf("expected error message '%v', got '%v'", tt.errorMsg, got.Error())
+			wantMsg := "binding failed: error"
+			if got.Error() != wantMsg {
+				t.Errorf("expected error message '%v', got '%v'", wantMsg, got.Error())
 			}
 
 			if !reflect.DeepEqual(tt.wantCalls, binder.calls) {
@@ -239,7 +222,7 @@ func processWithWaitingGroup(f func()) *sync.WaitGroup {
 func assertConfig(t *testing.T, conf QueueConf, name string, autoAck bool, exclusive bool, noLocal bool, noWait bool) {
 	t.Helper()
 	if conf.Name != name {
-		t.Errorf("wanted Name %v got %v", name, conf.Name)
+		t.Errorf("wanted name %v got %v", name, conf.Name)
 	}
 	if conf.AutoAck != autoAck {
 		t.Errorf("wanted AutoAck %v got %v", autoAck, conf.AutoAck)
