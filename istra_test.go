@@ -9,12 +9,12 @@ import (
 )
 
 const (
-	channelMethod = "consumer()"
-	closeMethod   = "close()"
-	channelName   = "name"
-	declare       = "declare"
-	bind          = "bind"
-	unbind        = "unbind"
+	channelName = "name"
+	channel     = "channel()"
+	closeMethod = "close()"
+	declare     = "declare()"
+	bind        = "bind()"
+	unbind      = "unbind()"
 )
 
 func Test_consumeQueue(t *testing.T) {
@@ -30,7 +30,7 @@ func Test_consumeQueue(t *testing.T) {
 		closeChan <- errors.New("consumer closed")
 		wg.Wait()
 
-		want := []string{channelMethod}
+		want := []string{channel}
 		if !reflect.DeepEqual(want, chMock.calls) {
 			t.Errorf("wanted calls %v got %v", want, chMock.calls)
 		}
@@ -130,7 +130,7 @@ func Test_QueueBind(t *testing.T) {
 			t.Errorf("didn't expected error, got '%v'", err)
 		}
 
-		wantChannel := []string{channelMethod}
+		wantChannel := []string{channel}
 		if !reflect.DeepEqual(wantChannel, chMock.calls) {
 			t.Errorf("wanted calls %v got %v", wantChannel, chMock.calls)
 		}
@@ -142,14 +142,14 @@ func Test_QueueBind(t *testing.T) {
 	})
 
 	t.Run("test bindQueues()", func(t *testing.T) {
-		declareConf := DeclareConf{}
+		d := Declare{}
 		bindErrorQueue := Bind{Exchange: "myExchange", Queue: "errorQueue", Topic: "*.ERROR"}
 		bindWarningQueue := Bind{Exchange: "myExchange", Queue: "warningQueue", Topic: "*.WARNING"}
 		unBindQueue := UnBind{Exchange: "myExchange", Queue: "infoQueue", Topic: "*.INFO"}
 		bindings := Bindings{
-			Declare{declareConf},
+			d,
 			bindErrorQueue,
-			DeclareBind{Bind: bindWarningQueue, Conf: declareConf},
+			DeclareBind{Bind: bindWarningQueue, Declare: d},
 			unBindQueue,
 		}
 
@@ -165,7 +165,7 @@ func Test_QueueBind(t *testing.T) {
 			t.Errorf("wanted calls %v got %v", want, binder.calls)
 		}
 		wantBindings := make([]interface{}, 0)
-		wantBindings = append(wantBindings, declareConf, bindErrorQueue, declareConf, bindWarningQueue, unBindQueue)
+		wantBindings = append(wantBindings, d, bindErrorQueue, d, bindWarningQueue, unBindQueue)
 
 		if !reflect.DeepEqual(wantBindings, binder.passedStructs) {
 			t.Errorf("wanted passedStructs %v\ngot %v", bindings, binder.passedStructs)
@@ -199,9 +199,9 @@ func Test_QueueBind(t *testing.T) {
 			unbindErr  error
 			wantCalls  []string
 		}{
-			{"test binding return error", Bindings{DeclareBind{Bind: Bind{}, Conf: DeclareConf{}}, Bind{}}, nil, err, nil, []string{declare, closeMethod}},
-			{"test declare() return error", Bindings{DeclareBind{Bind: Bind{}, Conf: DeclareConf{}}, Bind{}}, err, nil, nil, []string{declare, bind, closeMethod}},
-			{"test unbind() return error", Bindings{DeclareBind{Bind: Bind{}, Conf: DeclareConf{}}, UnBind{}, Bind{}}, nil, nil, err, []string{declare, bind, unbind, closeMethod}},
+			{"test declare() return error", Bindings{DeclareBind{Bind: Bind{}, Declare: Declare{}}, Bind{}}, nil, err, nil, []string{declare, closeMethod}},
+			{"test bind() return error", Bindings{DeclareBind{Bind: Bind{}, Declare: Declare{}}, Bind{}}, err, nil, nil, []string{declare, bind, closeMethod}},
+			{"test unbind() return error", Bindings{DeclareBind{Bind: Bind{}, Declare: Declare{}}, UnBind{}, Bind{}}, nil, nil, err, []string{declare, bind, unbind, closeMethod}},
 		}
 
 		for _, tt := range tests {

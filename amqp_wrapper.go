@@ -44,7 +44,7 @@ func (ch *channelWrapper) consume(queue string, autoAck, exclusive, noLocal, noW
 	return ch.Consume(queue, "", autoAck, exclusive, noLocal, noWait, nil)
 }
 
-func (ch *channelWrapper) declare(d DeclareConf) error {
+func (ch *channelWrapper) declare(d Declare) error {
 	return nil
 }
 

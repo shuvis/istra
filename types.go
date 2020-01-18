@@ -11,7 +11,11 @@ type QueueConf struct {
 type Bindings []interface{}
 
 type Declare struct {
-	Conf DeclareConf
+	Name       string
+	Durable    bool
+	AutoDelete bool
+	Exclusive  bool
+	NoWait     bool
 }
 
 type Bind struct {
@@ -28,14 +32,6 @@ type UnBind struct {
 }
 
 type DeclareBind struct {
-	Conf DeclareConf
-	Bind Bind
-}
-
-type DeclareConf struct {
-	Name       string
-	Durable    bool
-	AutoDelete bool
-	Exclusive  bool
-	NoWait     bool
+	Declare Declare
+	Bind    Bind
 }

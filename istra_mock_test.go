@@ -18,7 +18,7 @@ type consumeChannelerMock struct {
 }
 
 func (ccm *consumeChannelerMock) channel() (consumer, error) {
-	ccm.calls = append(ccm.calls, channelMethod)
+	ccm.calls = append(ccm.calls, channel)
 	return ccm.ch, ccm.err
 }
 
@@ -44,7 +44,7 @@ type bindChannelMock struct {
 }
 
 func (bcm *bindChannelMock) channel() (binder, error) {
-	bcm.calls = append(bcm.calls, channelMethod)
+	bcm.calls = append(bcm.calls, channel)
 	return bcm.b, bcm.err
 }
 
@@ -62,7 +62,7 @@ func (bm *binderMock) bind(b Bind) error {
 	return bm.bindErr
 }
 
-func (bm *binderMock) declare(conf DeclareConf) error {
+func (bm *binderMock) declare(conf Declare) error {
 	bm.passedStructs = append(bm.passedStructs, conf)
 	bm.calls = append(bm.calls, declare)
 	return bm.declareErr

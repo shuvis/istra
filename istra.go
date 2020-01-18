@@ -51,7 +51,7 @@ type bindChanneler interface {
 
 type binder interface {
 	closer
-	declare(d DeclareConf) error
+	declare(d Declare) error
 	bind(b Bind) error
 	unbind(u UnBind) error
 }
@@ -70,13 +70,13 @@ func bindQueues(binder bindChanneler, bindings Bindings) error {
 	for _, b := range bindings {
 		switch b.(type) {
 		case Declare:
-			err = ch.declare(b.(Declare).Conf)
+			err = ch.declare(b.(Declare))
 		case Bind:
 			err = ch.bind(b.(Bind))
 		case UnBind:
 			err = ch.unbind(b.(UnBind))
 		case DeclareBind:
-			err = ch.declare(b.(DeclareBind).Conf)
+			err = ch.declare(b.(DeclareBind).Declare)
 			if err != nil {
 				return err
 			}
