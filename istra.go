@@ -1,12 +1,13 @@
 package istra
 
 import (
-	"errors"
+	"fmt"
+	"github.com/pkg/errors"
 	"github.com/streadway/amqp"
 )
 
 var (
-	ErrCreatingChannel  = errors.New("error creating consumer")
+	ErrCreatingChannel  = errors.New("error creating channel")
 	ErrConsumingChannel = errors.New("error consuming queue")
 	UnknownBinding      = errors.New("unknown binding; allowed: 'Declare', 'Bind', 'UnBind', 'DeclareBind'")
 )
@@ -71,22 +72,35 @@ func bindQueues(binder bindChanneler, bindings Bindings) error {
 		switch b.(type) {
 		case Declare:
 			err = ch.declare(b.(Declare))
+			if err != nil {
+				return errors.Wrap(err, fmt.Sprintf("declaring queue : '%s' failed", b.(Declare).Name))
+			}
 		case Bind:
 			err = ch.bind(b.(Bind))
+			if err != nil {
+				return wrap(err, "binding", b.(Bind).Name)
+			}
 		case UnBind:
 			err = ch.unbind(b.(UnBind))
+			if err != nil {
+				return wrap(err, "unbinding", b.(UnBind).Queue)
+			}
 		case DeclareBind:
 			err = ch.declare(b.(DeclareBind).Declare)
 			if err != nil {
-				return err
+				return wrap(err, "declaring", b.(DeclareBind).Declare.Name)
 			}
 			err = ch.bind(b.(DeclareBind).Bind)
+			if err != nil {
+				return wrap(err, "binding", b.(DeclareBind).Bind.Name)
+			}
 		default:
 			return UnknownBinding
 		}
-		if err != nil {
-			return err
-		}
 	}
 	return nil
+}
+
+func wrap(err error, method, queue string) error {
+	return errors.Wrap(err, fmt.Sprintf("%s queue : '%s' failed", method, queue))
 }

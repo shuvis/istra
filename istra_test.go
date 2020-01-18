@@ -1,7 +1,7 @@
 package istra
 
 import (
-	"errors"
+	"github.com/pkg/errors"
 	"github.com/streadway/amqp"
 	"reflect"
 	"sync"
@@ -191,25 +191,31 @@ func Test_QueueBind(t *testing.T) {
 
 	t.Run("test bindQueues() return error", func(t *testing.T) {
 		err := errors.New("error")
+		dQueue := "d queue"
 		tests := []struct {
 			name       string
 			bindings   Bindings
 			bindErr    error
 			declareErr error
 			unbindErr  error
+			errorMsg   string
 			wantCalls  []string
 		}{
-			{"test declare() return error", Bindings{DeclareBind{Bind: Bind{}, Declare: Declare{}}, Bind{}}, nil, err, nil, []string{declare, closeMethod}},
-			{"test bind() return error", Bindings{DeclareBind{Bind: Bind{}, Declare: Declare{}}, Bind{}}, err, nil, nil, []string{declare, bind, closeMethod}},
-			{"test unbind() return error", Bindings{DeclareBind{Bind: Bind{}, Declare: Declare{}}, UnBind{}, Bind{}}, nil, nil, err, []string{declare, bind, unbind, closeMethod}},
+			{"test declare() return error", Bindings{DeclareBind{Bind: Bind{}, Declare: Declare{Name: dQueue}}, Bind{}}, nil, err, nil, "declaring queue : 'd queue' failed: error", []string{declare, closeMethod}},
+			{"test bind() return error", Bindings{DeclareBind{Bind: Bind{Name: "b queue"}, Declare: Declare{}}, Bind{}}, err, nil, nil, "binding queue : 'b queue' failed: error", []string{declare, bind, closeMethod}},
+			{"test unbind() return error", Bindings{DeclareBind{Bind: Bind{}, Declare: Declare{}}, UnBind{Queue: "u queue"}, Bind{}}, nil, nil, err, "unbinding queue : 'u queue' failed: error", []string{declare, bind, unbind, closeMethod}},
 		}
 
 		for _, tt := range tests {
 			binder := &binderMock{bindErr: tt.bindErr, declareErr: tt.declareErr, unbindErr: tt.unbindErr}
 			got := bindQueues(&bindChannelMock{b: binder}, tt.bindings)
 
-			if got != err {
+			if errors.Cause(got) != err {
 				t.Errorf("expected error '%v, got '%v'", err, got)
+			}
+
+			if got.Error() != tt.errorMsg {
+				t.Errorf("expected error message '%v', got '%v'", tt.errorMsg, got.Error())
 			}
 
 			if !reflect.DeepEqual(tt.wantCalls, binder.calls) {
