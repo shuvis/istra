@@ -7,9 +7,12 @@ import (
 )
 
 var (
-	ErrCreatingChannel  = errors.New("error creating channel")
-	ErrConsumingChannel = errors.New("error consuming queue")
-	UnknownBinding      = errors.New("unknown binding; allowed: 'Declare', 'Bind', 'UnBind', 'DeclareBind'")
+	UnknownBinding = errors.New("unknown binding; allowed: 'Declare', 'Bind', 'UnBind', 'DeclareBind'")
+)
+
+const (
+	channelError = "error creating channel"
+	queueError   = "error consuming queue"
 )
 
 type connection interface {
@@ -28,12 +31,12 @@ type consumer interface {
 func consumeQueue(conn connection, conf QueueConf, f func(amqp.Delivery)) {
 	ch, err := conn.channel()
 	if err != nil {
-		panic(ErrCreatingChannel)
+		panic(errors.Wrap(err, channelError))
 	}
 
 	deliveries, err := ch.consume(conf.Name, conf.AutoAck, conf.Exclusive, conf.NoLocal, conf.NoWait)
 	if err != nil {
-		panic(ErrConsumingChannel)
+		panic(errors.Wrap(err, queueError))
 	}
 
 	for {
@@ -64,7 +67,7 @@ type closer interface {
 func bindQueues(binder bindChanneler, bindings Bindings) error {
 	ch, err := binder.channel()
 	if err != nil {
-		return ErrCreatingChannel
+		return errors.Wrap(err, channelError)
 	}
 	defer ch.close()
 

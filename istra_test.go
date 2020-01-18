@@ -38,7 +38,7 @@ func Test_consumeQueue(t *testing.T) {
 
 	t.Run("test consumer() return error", func(t *testing.T) {
 		conn := &connectionMock{consumeChanneler: &consumeChannelerMock{err: errors.New("error")}}
-		assertPanic(t, ErrCreatingChannel, func() {
+		assertPanic(t, "error creating channel: error", func() {
 			consumeQueue(conn, QueueConf{}, func(d amqp.Delivery) {})
 		})
 	})
@@ -76,7 +76,7 @@ func Test_consumeQueue(t *testing.T) {
 	t.Run("test consume() return error", func(t *testing.T) {
 		conn := &connectionMock{consumeChanneler: &consumeChannelerMock{ch: &consumerMock{err: errors.New("error")}}}
 
-		assertPanic(t, ErrConsumingChannel, func() {
+		assertPanic(t, "error consuming queue: error", func() {
 			consumeQueue(conn, QueueConf{}, func(d amqp.Delivery) {})
 		})
 	})
@@ -112,8 +112,9 @@ func Test_QueueBind(t *testing.T) {
 		closer := &binderMock{}
 		err := bindQueues(&bindChannelMock{err: errors.New("error"), b: &binderMock{}}, Bindings{})
 
-		if err != ErrCreatingChannel {
-			t.Errorf("wanted '%v' got '%v'", ErrCreatingChannel, err)
+		wantErr := "error creating channel: error"
+		if err == nil || err.Error() != wantErr {
+			t.Errorf("wanted '%v' got '%v'", wantErr, err)
 		}
 
 		if len(closer.calls) > 0 {
@@ -254,11 +255,12 @@ func assertConfig(t *testing.T, conf QueueConf, name string, autoAck bool, exclu
 	}
 }
 
-func assertPanic(t *testing.T, want error, f func()) {
+func assertPanic(t *testing.T, errorMsg string, f func()) {
 	defer func() {
-		r := recover()
-		if r != want {
-			t.Errorf("got %q want %q", r, want)
+		if r, ok := recover().(error); ok {
+			if r.Error() != errorMsg {
+				t.Errorf("got %q want %q", r, errorMsg)
+			}
 		}
 	}()
 	f()
