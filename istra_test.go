@@ -20,14 +20,14 @@ const (
 func Test_consumeQueue(t *testing.T) {
 
 	t.Run("test consumer() is called", func(t *testing.T) {
-		closeChan := make(chan error)
+		closeChan := make(chan *amqp.Error)
 		chMock := consumeChannelerMock{ch: &consumerMock{}}
 		conn := &connectionMock{consumeChanneler: &chMock, closeChan: closeChan}
 
 		wg := processWithWaitingGroup(func() {
 			consumeQueue(conn, QueueConf{}, func(d amqp.Delivery) {})
 		})
-		closeChan <- errors.New("consumer closed")
+		closeChan <- &amqp.Error{}
 		wg.Wait()
 
 		want := []string{channel}
@@ -44,7 +44,7 @@ func Test_consumeQueue(t *testing.T) {
 	})
 
 	t.Run("test QueueConf passed to consumer.consume(QueueConf)", func(t *testing.T) {
-		closeChan := make(chan error)
+		closeChan := make(chan *amqp.Error)
 		channel := consumerMock{}
 		conn := &connectionMock{consumeChanneler: &consumeChannelerMock{ch: &channel}, closeChan: closeChan}
 		conf := QueueConf{Name: channelName, AutoAck: true, Exclusive: true, NoLocal: true, NoWait: true}
@@ -52,14 +52,14 @@ func Test_consumeQueue(t *testing.T) {
 		wg := processWithWaitingGroup(func() {
 			consumeQueue(conn, conf, func(d amqp.Delivery) {})
 		})
-		closeChan <- errors.New("consumer closed")
+		closeChan <- &amqp.Error{}
 		wg.Wait()
 
 		assertConfig(t, channel.Conf, channelName, true, true, true, true)
 	})
 
 	t.Run("test default QueueConf is passed", func(t *testing.T) {
-		closeChan := make(chan error)
+		closeChan := make(chan *amqp.Error)
 		channel := consumerMock{}
 		conn := &connectionMock{consumeChanneler: &consumeChannelerMock{ch: &channel}, closeChan: closeChan}
 		conf := QueueConf{Name: channelName}
@@ -67,7 +67,7 @@ func Test_consumeQueue(t *testing.T) {
 		wg := processWithWaitingGroup(func() {
 			consumeQueue(conn, conf, func(d amqp.Delivery) {})
 		})
-		closeChan <- errors.New("consumer closed")
+		closeChan <- &amqp.Error{}
 		wg.Wait()
 
 		assertConfig(t, channel.Conf, channelName, false, false, false, false)
@@ -83,7 +83,7 @@ func Test_consumeQueue(t *testing.T) {
 
 	t.Run("test deliveries processing", func(t *testing.T) {
 		deliveries := make(chan amqp.Delivery)
-		closeChan := make(chan error)
+		closeChan := make(chan *amqp.Error)
 		channel := consumerMock{msgChan: deliveries}
 		conn := &connectionMock{consumeChanneler: &consumeChannelerMock{ch: &channel}, closeChan: closeChan}
 		var result []string
@@ -95,7 +95,7 @@ func Test_consumeQueue(t *testing.T) {
 		deliveries <- amqp.Delivery{Body: []byte("1")}
 		deliveries <- amqp.Delivery{Body: []byte("2")}
 		deliveries <- amqp.Delivery{Body: []byte("3")}
-		closeChan <- errors.New("consumer closed")
+		closeChan <- &amqp.Error{}
 
 		want := []string{"1", "2", "3"}
 

@@ -28,8 +28,9 @@ func (cw *connectionWrapper) channel() (consumer, error) {
 	return &channelWrapper{ch}, err
 }
 
-func (cw *connectionWrapper) notifyOnClose() chan error {
-	return nil
+func (cw *connectionWrapper) notifyOnClose() chan *amqp.Error {
+	closer := make(chan *amqp.Error)
+	return cw.NotifyClose(closer)
 }
 
 type channelWrapper struct {
@@ -45,13 +46,14 @@ func (ch *channelWrapper) consume(queue string, autoAck, exclusive, noLocal, noW
 }
 
 func (ch *channelWrapper) declare(d Declare) error {
-	return nil
+	_, err := ch.QueueDeclare(d.Name, d.Durable, d.AutoDelete, d.Exclusive, d.NoWait, nil)
+	return err
 }
 
 func (ch *channelWrapper) bind(b Bind) error {
-	return nil
+	return ch.QueueBind(b.Name, b.Topic, b.Exchange, b.NoWait, nil)
 }
 
 func (ch *channelWrapper) unbind(u UnBind) error {
-	return nil
+	return ch.QueueUnbind(u.Queue, u.Topic, u.Exchange, nil)
 }

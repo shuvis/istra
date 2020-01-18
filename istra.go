@@ -13,7 +13,7 @@ var (
 
 type connection interface {
 	consumeChanneler
-	notifyOnClose() chan error
+	notifyOnClose() chan *amqp.Error
 }
 
 type consumeChanneler interface {

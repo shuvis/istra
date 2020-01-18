@@ -4,10 +4,10 @@ import "github.com/streadway/amqp"
 
 type connectionMock struct {
 	consumeChanneler
-	closeChan chan error
+	closeChan chan *amqp.Error
 }
 
-func (cm *connectionMock) notifyOnClose() chan error {
+func (cm *connectionMock) notifyOnClose() chan *amqp.Error {
 	return cm.closeChan
 }
 

@@ -19,6 +19,7 @@ type Declare struct {
 }
 
 type Bind struct {
+	Name     string
 	Exchange string
 	Queue    string
 	Topic    string
