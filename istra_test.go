@@ -12,9 +12,10 @@ const (
 	channelName = "name"
 	channel     = "channel()"
 	closeMethod = "close()"
-	declare     = "declare()"
+	declare     = "queue()"
 	bind        = "bind()"
 	unbind      = "unbind()"
+	exchange    = "exchange()"
 )
 
 func Test_consumeQueue(t *testing.T) {
@@ -143,14 +144,14 @@ func Test_QueueBind(t *testing.T) {
 	})
 
 	t.Run("test bindQueues()", func(t *testing.T) {
-		d := Declare{}
+		d := QueueDeclare{}
 		bindErrorQueue := Bind{Exchange: "myExchange", Queue: "errorQueue", Topic: "*.ERROR"}
 		bindWarningQueue := Bind{Exchange: "myExchange", Queue: "warningQueue", Topic: "*.WARNING"}
 		unBindQueue := UnBind{Exchange: "myExchange", Queue: "infoQueue", Topic: "*.INFO"}
 		bindings := Bindings{
 			d,
 			bindErrorQueue,
-			DeclareBind{Bind: bindWarningQueue, Declare: d},
+			bindWarningQueue,
 			unBindQueue,
 		}
 
@@ -161,12 +162,12 @@ func Test_QueueBind(t *testing.T) {
 			t.Errorf("didn't expected error, got '%v'", err)
 		}
 
-		want := []string{declare, bind, declare, bind, unbind, closeMethod}
+		want := []string{declare, bind, bind, unbind, closeMethod}
 		if !reflect.DeepEqual(want, binder.calls) {
 			t.Errorf("wanted calls %v got %v", want, binder.calls)
 		}
 		wantBindings := make([]interface{}, 0)
-		wantBindings = append(wantBindings, d, bindErrorQueue, d, bindWarningQueue, unBindQueue)
+		wantBindings = append(wantBindings, d, bindErrorQueue, bindWarningQueue, unBindQueue)
 
 		if !reflect.DeepEqual(wantBindings, binder.passedStructs) {
 			t.Errorf("wanted passedStructs %v\ngot %v", bindings, binder.passedStructs)
@@ -184,9 +185,9 @@ func Test_QueueBind(t *testing.T) {
 			unbindErr  error
 			wantCalls  []string
 		}{
-			{"test declare() return error", Bindings{DeclareBind{Bind: Bind{}, Declare: Declare{Name: dQueue}}, Bind{}}, nil, err, nil, []string{declare, closeMethod}},
-			{"test bind() return error", Bindings{DeclareBind{Bind: Bind{Name: "b queue"}, Declare: Declare{}}, Bind{}}, err, nil, nil, []string{declare, bind, closeMethod}},
-			{"test unbind() return error", Bindings{DeclareBind{Bind: Bind{}, Declare: Declare{}}, UnBind{Queue: "u queue"}, Bind{}}, nil, nil, err, []string{declare, bind, unbind, closeMethod}},
+			{"test queue() return error", Bindings{QueueDeclare{Name: dQueue}, Bind{}}, nil, err, nil, []string{declare, closeMethod}},
+			{"test bind() return error", Bindings{QueueDeclare{}, Bind{Name: "b queue"}, Bind{}}, err, nil, nil, []string{declare, bind, closeMethod}},
+			{"test unbind() return error", Bindings{QueueDeclare{}, Bind{}, UnBind{Queue: "u queue"}, Bind{}}, nil, nil, err, []string{declare, bind, unbind, closeMethod}},
 		}
 
 		for _, tt := range tests {

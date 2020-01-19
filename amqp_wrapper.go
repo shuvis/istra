@@ -45,7 +45,7 @@ func (ch *channelWrapper) consume(queue string, autoAck, exclusive, noLocal, noW
 	return ch.Consume(queue, "", autoAck, exclusive, noLocal, noWait, nil)
 }
 
-func (ch *channelWrapper) declare(d Declare) error {
+func (ch *channelWrapper) queue(d QueueDeclare) error {
 	_, err := ch.QueueDeclare(d.Name, d.Durable, d.AutoDelete, d.Exclusive, d.NoWait, nil)
 	return err
 }
@@ -56,4 +56,8 @@ func (ch *channelWrapper) bind(b Bind) error {
 
 func (ch *channelWrapper) unbind(u UnBind) error {
 	return ch.QueueUnbind(u.Queue, u.Topic, u.Exchange, nil)
+}
+
+func (ch *channelWrapper) exchange(ed ExchangeDeclare) error {
+	return ch.ExchangeDeclare(ed.Exchange, ed.Kind, ed.Durable, ed.AutoDelete, ed.Internal, ed.NoWait, nil)
 }

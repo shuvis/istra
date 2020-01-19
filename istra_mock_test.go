@@ -62,7 +62,7 @@ func (bm *binderMock) bind(b Bind) error {
 	return bm.bindErr
 }
 
-func (bm *binderMock) declare(conf Declare) error {
+func (bm *binderMock) queue(conf QueueDeclare) error {
 	bm.passedStructs = append(bm.passedStructs, conf)
 	bm.calls = append(bm.calls, declare)
 	return bm.declareErr
@@ -71,6 +71,12 @@ func (bm *binderMock) declare(conf Declare) error {
 func (bm *binderMock) unbind(u UnBind) error {
 	bm.passedStructs = append(bm.passedStructs, u)
 	bm.calls = append(bm.calls, unbind)
+	return bm.unbindErr
+}
+
+func (bm *binderMock) exchange(ed ExchangeDeclare) error {
+	bm.passedStructs = append(bm.passedStructs, ed)
+	bm.calls = append(bm.calls, exchange)
 	return bm.unbindErr
 }
 

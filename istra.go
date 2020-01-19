@@ -51,7 +51,8 @@ type bindChanneler interface {
 
 type binder interface {
 	closer
-	declare(d Declare) error
+	queue(d QueueDeclare) error
+	exchange(ed ExchangeDeclare) error
 	bind(b Bind) error
 	unbind(u UnBind) error
 }

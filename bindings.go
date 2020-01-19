@@ -8,7 +8,7 @@ type QueueConf struct {
 	NoWait    bool
 }
 
-type Declare struct {
+type QueueDeclare struct {
 	Name       string
 	Durable    bool
 	AutoDelete bool
@@ -16,8 +16,8 @@ type Declare struct {
 	NoWait     bool
 }
 
-func (d Declare) apply(b binder) error {
-	return b.declare(d)
+func (d QueueDeclare) apply(b binder) error {
+	return b.queue(d)
 }
 
 type Bind struct {
@@ -42,15 +42,15 @@ func (u UnBind) apply(b binder) error {
 	return b.unbind(u)
 }
 
-type DeclareBind struct {
-	Declare Declare
-	Bind    Bind
+type ExchangeDeclare struct {
+	Exchange   string
+	Kind       string
+	Durable    bool
+	AutoDelete bool
+	Internal   bool
+	NoWait     bool
 }
 
-func (db DeclareBind) apply(b binder) error {
-	err := b.declare(db.Declare)
-	if err != nil {
-		return err
-	}
-	return b.bind(db.Bind)
+func (ed ExchangeDeclare) apply(b binder) error {
+	return b.exchange(ed)
 }
