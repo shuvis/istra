@@ -12,5 +12,9 @@ services:
 env:
   - GO111MODULE=on AMQP_URL=amqp://guest:guest@127.0.0.1:5672/
 
+before_install:
+  - go get github.com/mattn/goveralls
+
 script:
-  - go test -cpu=1,2 -v ./...
+  - go test -cpu=1,2 -v ./... -cover
+  - $GOPATH/bin/goveralls -service=travis-ci
