@@ -2,10 +2,12 @@ package istra
 
 import "github.com/streadway/amqp"
 
+// ConsumeQueue calls handler function on each message delivered to a queue
 func ConsumeQueue(conn *amqp.Connection, conf QueueConf, f func(amqp.Delivery)) {
 	consumeQueue(&connectionWrapper{conn}, conf, f)
 }
 
+// BindQueues process passed bindings
 func BindQueues(conn *amqp.Connection, bindings Bindings) error {
 	return bindQueues(&binderWrapper{conn}, bindings)
 }
