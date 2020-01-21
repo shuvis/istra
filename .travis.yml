@@ -18,5 +18,5 @@ before_install:
   - go get github.com/mattn/goveralls
 
 script:
-  - go test -cpu=1,2 -v ./... -tags integration -cover
+  - go test -cpu=1,2 -v ./... -cover
   - $GOPATH/bin/goveralls -service=travis-ci
