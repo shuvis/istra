@@ -4,7 +4,7 @@ import "github.com/streadway/amqp"
 
 // ConsumeQueue calls handler function on each message delivered to a testQueue
 func ConsumeQueue(conn *amqp.Connection, conf QueueConf, f func(amqp.Delivery)) {
-	consumeQueue(&connectionWrapper{conn}, conf, f)
+	consumeQueue(&consumerWrapper{conn, conf}, conf, f)
 }
 
 // ProcessOperations process passed bindings
@@ -16,8 +16,9 @@ type operatorWrapper struct {
 	*amqp.Connection
 }
 
-type connectionWrapper struct {
+type consumerWrapper struct {
 	*amqp.Connection
+	QueueConf
 }
 
 func (bw *operatorWrapper) channel() (operator, error) {
@@ -25,12 +26,16 @@ func (bw *operatorWrapper) channel() (operator, error) {
 	return &channelWrapper{ch}, err
 }
 
-func (cw *connectionWrapper) channel() (consumer, error) {
+func (cw *consumerWrapper) channel() (consumer, error) {
 	ch, err := cw.Channel()
+	if err != nil {
+		return nil, err
+	}
+	err = ch.Qos(cw.PrefetchCount, cw.PrefetchSize, cw.Global)
 	return &channelWrapper{ch}, err
 }
 
-func (cw *connectionWrapper) notifyOnClose() chan *amqp.Error {
+func (cw *consumerWrapper) notifyOnClose() chan *amqp.Error {
 	closer := make(chan *amqp.Error)
 	return cw.NotifyClose(closer)
 }

@@ -1,11 +1,14 @@
 package istra
 
 type QueueConf struct {
-	Name      string
-	AutoAck   bool
-	Exclusive bool
-	NoLocal   bool
-	NoWait    bool
+	Name          string
+	AutoAck       bool
+	Exclusive     bool
+	NoLocal       bool
+	NoWait        bool
+	PrefetchSize  int
+	PrefetchCount int
+	Global        bool
 }
 
 type QueueDeclare struct {
