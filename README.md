@@ -23,10 +23,10 @@ func main() {
 		panic(err)
 	}
 
-	err = istra.Process(conn, istra.Actions{
-		istra.ExchangeDeclare{Exchange: "testExchange", Kind: "fanout", Durable: true},
-		istra.QueueDeclare{Name: "testQueue", Durable: true, AutoDelete: true},
-		istra.Bind{Queue: "testQueue", Exchange: "testExchange", Topic: "topic"}})
+	err = istra.Process(conn,
+		istra.ExchangeDeclare{Exchange: "testExchange", Kind: "fanout", Durable: true, NoWait: false},
+		istra.QueueDeclare{Name: "testQueue", Durable: true, AutoDelete: true, Exclusive: true},
+		istra.Bind{Queue: "testQueue", Exchange: "testExchange", Topic: "topic", NoWait: true})
 
 	if err != nil {
 		panic(err)
@@ -36,8 +36,8 @@ func main() {
 		// process delivery
 	})
 
-	err = istra.Process(conn, istra.Actions{
-		istra.UnBind{Queue: "testQueue", Exchange: "testExchange", Topic: "topic"}})
+	err = istra.Process(conn,
+		istra.UnBind{Queue: "testQueue", Exchange: "testExchange", Topic: "topic"})
 
 	if err != nil {
 		panic(err)
