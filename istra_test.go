@@ -77,7 +77,7 @@ func Test_consumeQueue(t *testing.T) {
 	t.Run("test_consume()_return_error", func(t *testing.T) {
 		conn := &connectionMock{consumeChanneler: &consumeChannelerMock{ch: &consumerMock{err: errors.New("error")}}}
 
-		assertPanic(t, "error consuming testQueue: error", func() {
+		assertPanic(t, "error consuming queue: error", func() {
 			consumeQueue(conn, QueueConf{}, func(d amqp.Delivery) {})
 		})
 	})
@@ -107,7 +107,7 @@ func Test_consumeQueue(t *testing.T) {
 	})
 }
 
-func Test_QueueBind(t *testing.T) {
+func Test_processOperations(t *testing.T) {
 
 	t.Run("test_processOperations()_returns_error", func(t *testing.T) {
 		closer := &binderMock{}

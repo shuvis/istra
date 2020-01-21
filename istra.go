@@ -7,7 +7,7 @@ import (
 
 const (
 	channelError = "error creating channel"
-	queueError   = "error consuming testQueue"
+	queueError   = "error consuming queue"
 	bindingError = "binding failed"
 )
 
@@ -66,14 +66,14 @@ type action interface {
 }
 
 func processOperations(channeler bindChanneler, actions ...action) error {
-	ch, err := channeler.channel()
+	binder, err := channeler.channel()
 	if err != nil {
 		return errors.Wrap(err, channelError)
 	}
-	defer ch.close()
+	defer binder.close()
 
-	for _, b := range actions {
-		err := b.apply(ch)
+	for _, a := range actions {
+		err := a.apply(binder)
 		if err != nil {
 			return errors.Wrap(err, bindingError)
 		}
