@@ -23,7 +23,7 @@ func Test_Integration(t *testing.T) {
 
 	conn, err := amqp.Dial(url)
 	if err != nil {
-		t.Fatalf("didn't expected error, got '%v'", err)
+		t.Fatalf("didn't expect error, got '%v'", err)
 	}
 
 	err = ProcessOperations(conn, Operations{
@@ -31,7 +31,7 @@ func Test_Integration(t *testing.T) {
 		QueueDeclare{Name: testQueue},
 		Bind{Queue: testQueue, Exchange: testExchange}})
 	if err != nil {
-		t.Fatalf("didn't expected error, got '%v'", err)
+		t.Fatalf("didn't expect error, got '%v'", err)
 	}
 
 	var messages []string
@@ -41,7 +41,7 @@ func Test_Integration(t *testing.T) {
 
 	ch, err := conn.Channel()
 	if err != nil {
-		t.Fatalf("didn't expected error, got '%v'", err)
+		t.Fatalf("didn't expect error, got '%v'", err)
 	}
 
 	sendToExchange(ch, testExchange, "1")
@@ -50,19 +50,19 @@ func Test_Integration(t *testing.T) {
 
 	err = ProcessOperations(conn, Operations{UnBind{Queue: testQueue, Exchange: testExchange}})
 	if err != nil {
-		t.Fatalf("didn't expected error, got '%v'", err)
+		t.Fatalf("didn't expect error, got '%v'", err)
 	}
 
 	sendToExchange(ch, testExchange, "4")
 
 	err = ch.Close()
 	if err != nil {
-		t.Fatalf("didn't expected error, got '%v'", err)
+		t.Fatalf("didn't expect error, got '%v'", err)
 	}
 
 	err = conn.Close()
 	if err != nil {
-		t.Fatalf("didn't expected error, got '%v'", err)
+		t.Fatalf("didn't expect error, got '%v'", err)
 	}
 
 	want := []string{"1", "2", "3"}

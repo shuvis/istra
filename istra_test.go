@@ -129,7 +129,7 @@ func Test_QueueBind(t *testing.T) {
 		err := processOperations(chMock, Operations{})
 
 		if err != nil {
-			t.Errorf("didn't expected error, got '%v'", err)
+			t.Errorf("didn't expect error, got '%v'", err)
 		}
 
 		wantChannel := []string{channel}
@@ -159,7 +159,7 @@ func Test_QueueBind(t *testing.T) {
 		err := processOperations(&operatorChannelMock{b: binder}, bindings)
 
 		if err != nil {
-			t.Errorf("didn't expected error, got '%v'", err)
+			t.Errorf("didn't expect error, got '%v'", err)
 		}
 
 		want := []string{declare, bind, bind, unbind, closeMethod}
