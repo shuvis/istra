@@ -7,12 +7,12 @@ func ConsumeQueue(conn *amqp.Connection, conf QueueConf, f func(amqp.Delivery)) 
 	consumeQueue(&consumerWrapper{conn, conf}, conf, f)
 }
 
-// ProcessOperations process passed bindings
-func ProcessOperations(conn *amqp.Connection, operations Operations) error {
-	return processOperations(&operatorWrapper{conn}, operations)
+// Process passed actions
+func Process(conn *amqp.Connection, actions Actions) error {
+	return processOperations(&processWrapper{conn}, actions)
 }
 
-type operatorWrapper struct {
+type processWrapper struct {
 	*amqp.Connection
 }
 
@@ -21,7 +21,7 @@ type consumerWrapper struct {
 	QueueConf
 }
 
-func (bw *operatorWrapper) channel() (operator, error) {
+func (bw *processWrapper) channel() (binder, error) {
 	ch, err := bw.Channel()
 	return &channelWrapper{ch}, err
 }

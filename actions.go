@@ -19,7 +19,7 @@ type QueueDeclare struct {
 	NoWait     bool
 }
 
-func (d QueueDeclare) apply(b operator) error {
+func (d QueueDeclare) apply(b binder) error {
 	return b.queue(d)
 }
 
@@ -30,7 +30,7 @@ type Bind struct {
 	NoWait   bool
 }
 
-func (bind Bind) apply(b operator) error {
+func (bind Bind) apply(b binder) error {
 	return b.bind(bind)
 }
 
@@ -40,7 +40,7 @@ type UnBind struct {
 	Topic    string
 }
 
-func (u UnBind) apply(b operator) error {
+func (u UnBind) apply(b binder) error {
 	return b.unbind(u)
 }
 
@@ -53,6 +53,6 @@ type ExchangeDeclare struct {
 	NoWait     bool
 }
 
-func (ed ExchangeDeclare) apply(b operator) error {
+func (ed ExchangeDeclare) apply(b binder) error {
 	return b.exchange(ed)
 }

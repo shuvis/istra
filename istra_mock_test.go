@@ -37,18 +37,18 @@ func (cm *consumerMock) consume(queue string, autoAck, exclusive, noLocal, noWai
 	return cm.msgChan, cm.err
 }
 
-type operatorChannelMock struct {
-	b     operator
+type bindChannelMock struct {
+	b     binder
 	err   error
 	calls []string
 }
 
-func (bcm *operatorChannelMock) channel() (operator, error) {
+func (bcm *bindChannelMock) channel() (binder, error) {
 	bcm.calls = append(bcm.calls, channel)
 	return bcm.b, bcm.err
 }
 
-type operatorMock struct {
+type binderMock struct {
 	bindErr       error
 	declareErr    error
 	unbindErr     error
@@ -56,30 +56,30 @@ type operatorMock struct {
 	passedStructs []interface{}
 }
 
-func (bm *operatorMock) bind(b Bind) error {
+func (bm *binderMock) bind(b Bind) error {
 	bm.passedStructs = append(bm.passedStructs, b)
 	bm.calls = append(bm.calls, bind)
 	return bm.bindErr
 }
 
-func (bm *operatorMock) queue(conf QueueDeclare) error {
+func (bm *binderMock) queue(conf QueueDeclare) error {
 	bm.passedStructs = append(bm.passedStructs, conf)
 	bm.calls = append(bm.calls, declare)
 	return bm.declareErr
 }
 
-func (bm *operatorMock) unbind(u UnBind) error {
+func (bm *binderMock) unbind(u UnBind) error {
 	bm.passedStructs = append(bm.passedStructs, u)
 	bm.calls = append(bm.calls, unbind)
 	return bm.unbindErr
 }
 
-func (bm *operatorMock) exchange(ed ExchangeDeclare) error {
+func (bm *binderMock) exchange(ed ExchangeDeclare) error {
 	bm.passedStructs = append(bm.passedStructs, ed)
 	bm.calls = append(bm.calls, exchange)
 	return bm.unbindErr
 }
 
-func (bm *operatorMock) close() {
+func (bm *binderMock) close() {
 	bm.calls = append(bm.calls, closeMethod)
 }

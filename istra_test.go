@@ -39,7 +39,7 @@ func Test_consumeQueue(t *testing.T) {
 
 	t.Run("test consumer() return error", func(t *testing.T) {
 		conn := &connectionMock{consumeChanneler: &consumeChannelerMock{err: errors.New("error")}}
-		assertPanic(t, "error creating channel: error", func() {
+		assertPanic(t, "error creating binder: error", func() {
 			consumeQueue(conn, QueueConf{}, func(d amqp.Delivery) {})
 		})
 	})
@@ -110,10 +110,10 @@ func Test_consumeQueue(t *testing.T) {
 func Test_QueueBind(t *testing.T) {
 
 	t.Run("test processOperations() returns error", func(t *testing.T) {
-		closer := &operatorMock{}
-		err := processOperations(&operatorChannelMock{err: errors.New("error"), b: &operatorMock{}}, Operations{})
+		closer := &binderMock{}
+		err := processOperations(&bindChannelMock{err: errors.New("error"), b: &binderMock{}}, Actions{})
 
-		wantErr := "error creating channel: error"
+		wantErr := "error creating binder: error"
 		if err == nil || err.Error() != wantErr {
 			t.Errorf("wanted '%v' got '%v'", wantErr, err)
 		}
@@ -124,9 +124,9 @@ func Test_QueueBind(t *testing.T) {
 	})
 
 	t.Run("test consumer() and close() are called", func(t *testing.T) {
-		closer := &operatorMock{}
-		chMock := &operatorChannelMock{b: closer}
-		err := processOperations(chMock, Operations{})
+		closer := &binderMock{}
+		chMock := &bindChannelMock{b: closer}
+		err := processOperations(chMock, Actions{})
 
 		if err != nil {
 			t.Errorf("didn't expect error, got '%v'", err)
@@ -148,15 +148,15 @@ func Test_QueueBind(t *testing.T) {
 		bindErrorQueue := Bind{Exchange: "testExchange", Queue: "errorQueue", Topic: "*.ERROR"}
 		bindWarningQueue := Bind{Exchange: "testExchange", Queue: "warningQueue", Topic: "*.WARNING"}
 		unBindQueue := UnBind{Exchange: "testExchange", Queue: "infoQueue", Topic: "*.INFO"}
-		bindings := Operations{
+		bindings := Actions{
 			d,
 			bindErrorQueue,
 			bindWarningQueue,
 			unBindQueue,
 		}
 
-		binder := &operatorMock{}
-		err := processOperations(&operatorChannelMock{b: binder}, bindings)
+		binder := &binderMock{}
+		err := processOperations(&bindChannelMock{b: binder}, bindings)
 
 		if err != nil {
 			t.Errorf("didn't expect error, got '%v'", err)
@@ -179,20 +179,20 @@ func Test_QueueBind(t *testing.T) {
 		dQueue := "d testQueue"
 		tests := []struct {
 			name       string
-			bindings   Operations
+			bindings   Actions
 			bindErr    error
 			declareErr error
 			unbindErr  error
 			wantCalls  []string
 		}{
-			{"test testQueue() return error", Operations{QueueDeclare{Name: dQueue}, Bind{}}, nil, err, nil, []string{declare, closeMethod}},
-			{"test bind() return error", Operations{QueueDeclare{}, Bind{Queue: "b testQueue"}, Bind{}}, err, nil, nil, []string{declare, bind, closeMethod}},
-			{"test unbind() return error", Operations{QueueDeclare{}, Bind{}, UnBind{Queue: "u testQueue"}, Bind{}}, nil, nil, err, []string{declare, bind, unbind, closeMethod}},
+			{"test testQueue() return error", Actions{QueueDeclare{Name: dQueue}, Bind{}}, nil, err, nil, []string{declare, closeMethod}},
+			{"test bind() return error", Actions{QueueDeclare{}, Bind{Queue: "b testQueue"}, Bind{}}, err, nil, nil, []string{declare, bind, closeMethod}},
+			{"test unbind() return error", Actions{QueueDeclare{}, Bind{}, UnBind{Queue: "u testQueue"}, Bind{}}, nil, nil, err, []string{declare, bind, unbind, closeMethod}},
 		}
 
 		for _, tt := range tests {
-			binder := &operatorMock{bindErr: tt.bindErr, declareErr: tt.declareErr, unbindErr: tt.unbindErr}
-			got := processOperations(&operatorChannelMock{b: binder}, tt.bindings)
+			binder := &binderMock{bindErr: tt.bindErr, declareErr: tt.declareErr, unbindErr: tt.unbindErr}
+			got := processOperations(&bindChannelMock{b: binder}, tt.bindings)
 
 			if errors.Cause(got) != err {
 				t.Errorf("expected error '%v, got '%v'", err, got)

@@ -45,11 +45,11 @@ func consumeQueue(conn connection, conf QueueConf, f func(amqp.Delivery)) {
 	}
 }
 
-type operationChanneler interface {
-	channel() (operator, error)
+type bindChanneler interface {
+	channel() (binder, error)
 }
 
-type operator interface {
+type binder interface {
 	closer
 	queue(d QueueDeclare) error
 	exchange(ed ExchangeDeclare) error
@@ -61,20 +61,20 @@ type closer interface {
 	close()
 }
 
-type Operations []Operation
+type Actions []Action
 
-type Operation interface {
-	apply(operator) error
+type Action interface {
+	apply(binder) error
 }
 
-func processOperations(operator operationChanneler, operations Operations) error {
-	ch, err := operator.channel()
+func processOperations(channeler bindChanneler, actions Actions) error {
+	ch, err := channeler.channel()
 	if err != nil {
 		return errors.Wrap(err, channelError)
 	}
 	defer ch.close()
 
-	for _, b := range operations {
+	for _, b := range actions {
 		err := b.apply(ch)
 		if err != nil {
 			return errors.Wrap(err, bindingError)
