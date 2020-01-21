@@ -2,17 +2,17 @@ package istra
 
 import "github.com/streadway/amqp"
 
-// ConsumeQueue calls handler function on each message delivered to a queue
+// ConsumeQueue calls handler function on each message delivered to a testQueue
 func ConsumeQueue(conn *amqp.Connection, conf QueueConf, f func(amqp.Delivery)) {
 	consumeQueue(&connectionWrapper{conn}, conf, f)
 }
 
-// BindQueues process passed bindings
-func BindQueues(conn *amqp.Connection, bindings Bindings) error {
-	return bindQueues(&binderWrapper{conn}, bindings)
+// ProcessOperations process passed bindings
+func ProcessOperations(conn *amqp.Connection, operations Operations) error {
+	return processOperations(&operatorWrapper{conn}, operations)
 }
 
-type binderWrapper struct {
+type operatorWrapper struct {
 	*amqp.Connection
 }
 
@@ -20,7 +20,7 @@ type connectionWrapper struct {
 	*amqp.Connection
 }
 
-func (bw *binderWrapper) channel() (binder, error) {
+func (bw *operatorWrapper) channel() (operator, error) {
 	ch, err := bw.Channel()
 	return &channelWrapper{ch}, err
 }
@@ -53,7 +53,7 @@ func (ch *channelWrapper) queue(d QueueDeclare) error {
 }
 
 func (ch *channelWrapper) bind(b Bind) error {
-	return ch.QueueBind(b.Name, b.Topic, b.Exchange, b.NoWait, nil)
+	return ch.QueueBind(b.Queue, b.Topic, b.Exchange, b.NoWait, nil)
 }
 
 func (ch *channelWrapper) unbind(u UnBind) error {

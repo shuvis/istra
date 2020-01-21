@@ -7,7 +7,7 @@ import (
 
 const (
 	channelError = "error creating channel"
-	queueError   = "error consuming queue"
+	queueError   = "error consuming testQueue"
 	bindingError = "binding failed"
 )
 
@@ -45,11 +45,11 @@ func consumeQueue(conn connection, conf QueueConf, f func(amqp.Delivery)) {
 	}
 }
 
-type bindChanneler interface {
-	channel() (binder, error)
+type operationChanneler interface {
+	channel() (operator, error)
 }
 
-type binder interface {
+type operator interface {
 	closer
 	queue(d QueueDeclare) error
 	exchange(ed ExchangeDeclare) error
@@ -61,20 +61,20 @@ type closer interface {
 	close()
 }
 
-type Bindings []Binding
+type Operations []Operation
 
-type Binding interface {
-	apply(binder) error
+type Operation interface {
+	apply(operator) error
 }
 
-func bindQueues(binder bindChanneler, bindings Bindings) error {
-	ch, err := binder.channel()
+func processOperations(operator operationChanneler, operations Operations) error {
+	ch, err := operator.channel()
 	if err != nil {
 		return errors.Wrap(err, channelError)
 	}
 	defer ch.close()
 
-	for _, b := range bindings {
+	for _, b := range operations {
 		err := b.apply(ch)
 		if err != nil {
 			return errors.Wrap(err, bindingError)
