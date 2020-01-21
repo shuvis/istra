@@ -39,7 +39,7 @@ func Test_consumeQueue(t *testing.T) {
 
 	t.Run("test consumer() return error", func(t *testing.T) {
 		conn := &connectionMock{consumeChanneler: &consumeChannelerMock{err: errors.New("error")}}
-		assertPanic(t, "error creating binder: error", func() {
+		assertPanic(t, "error creating channel: error", func() {
 			consumeQueue(conn, QueueConf{}, func(d amqp.Delivery) {})
 		})
 	})
@@ -113,7 +113,7 @@ func Test_QueueBind(t *testing.T) {
 		closer := &binderMock{}
 		err := processOperations(&bindChannelMock{err: errors.New("error"), b: &binderMock{}}, Actions{})
 
-		wantErr := "error creating binder: error"
+		wantErr := "error creating channel: error"
 		if err == nil || err.Error() != wantErr {
 			t.Errorf("wanted '%v' got '%v'", wantErr, err)
 		}
