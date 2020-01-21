@@ -24,9 +24,9 @@ func main() {
 	}
 
 	err = istra.Process(conn,
-		istra.ExchangeDeclare{Exchange: "testExchange", Kind: "fanout", Durable: true, NoWait: false},
-		istra.QueueDeclare{Name: "testQueue", Durable: true, AutoDelete: true, Exclusive: true},
-		istra.Bind{Queue: "testQueue", Exchange: "testExchange", Topic: "topic", NoWait: true})
+		istra.ExchangeDeclare{Exchange: "testExchange", Kind: "fanout", Durable: true},
+		istra.QueueDeclare{Name: "testQueue", Durable: true, AutoDelete: true},
+		istra.Bind{Queue: "testQueue", Exchange: "testExchange", Topic: "topic"})
 
 	if err != nil {
 		panic(err)
