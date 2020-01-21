@@ -2,12 +2,14 @@ package istra
 
 import "github.com/streadway/amqp"
 
-// ConsumeQueue calls handler function on each message delivered to a testQueue
+// ConsumeQueue calls handler function on each message delivered to a queue.
+// This is blocking operation.
 func ConsumeQueue(conn *amqp.Connection, conf QueueConf, f func(amqp.Delivery)) {
 	consumeQueue(&consumerWrapper{conn, conf}, conf, f)
 }
 
-// Process passed actions
+// Process executes actions in order they passed.
+// Non-blocking operation.
 func Process(conn *amqp.Connection, actions ...action) error {
 	return processOperations(&processWrapper{conn}, actions...)
 }

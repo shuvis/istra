@@ -1,5 +1,6 @@
 package istra
 
+// QueueDeclare configuration for consuming queue with ConsumeQueue() method
 type QueueConf struct {
 	Name          string
 	AutoAck       bool
@@ -11,6 +12,7 @@ type QueueConf struct {
 	Global        bool
 }
 
+// QueueDeclare action which creates new queue
 type QueueDeclare struct {
 	Name       string
 	Durable    bool
@@ -23,6 +25,7 @@ func (d QueueDeclare) apply(b binder) error {
 	return b.queue(d)
 }
 
+// Bind action which binds Queue to Exchange
 type Bind struct {
 	Queue    string
 	Exchange string
@@ -34,6 +37,7 @@ func (bind Bind) apply(b binder) error {
 	return b.bind(bind)
 }
 
+// UnBind action which unbinds Queue from Exchange
 type UnBind struct {
 	Exchange string
 	Queue    string
@@ -44,6 +48,7 @@ func (u UnBind) apply(b binder) error {
 	return b.unbind(u)
 }
 
+// ExchangeDeclare action which creates new exchange
 type ExchangeDeclare struct {
 	Exchange   string
 	Kind       string
