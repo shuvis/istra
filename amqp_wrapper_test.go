@@ -24,10 +24,10 @@ func Test_Integration(t *testing.T) {
 		t.Fatalf("didn't expect error, got '%v'", err)
 	}
 
-	err = Process(conn, Actions{
+	err = Process(conn,
 		ExchangeDeclare{Exchange: testExchange, Kind: "fanout"},
 		QueueDeclare{Name: testQueue},
-		Bind{Queue: testQueue, Exchange: testExchange}})
+		Bind{Queue: testQueue, Exchange: testExchange})
 	if err != nil {
 		t.Fatalf("didn't expect error, got '%v'", err)
 	}
@@ -46,7 +46,7 @@ func Test_Integration(t *testing.T) {
 	sendToExchange(ch, testExchange, "2")
 	sendToExchange(ch, testExchange, "3")
 
-	err = Process(conn, Actions{UnBind{Queue: testQueue, Exchange: testExchange}})
+	err = Process(conn, UnBind{Queue: testQueue, Exchange: testExchange})
 	if err != nil {
 		t.Fatalf("didn't expect error, got '%v'", err)
 	}

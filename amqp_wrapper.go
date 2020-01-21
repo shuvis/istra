@@ -8,8 +8,8 @@ func ConsumeQueue(conn *amqp.Connection, conf QueueConf, f func(amqp.Delivery)) 
 }
 
 // Process passed actions
-func Process(conn *amqp.Connection, actions Actions) error {
-	return processOperations(&processWrapper{conn}, actions)
+func Process(conn *amqp.Connection, actions ...action) error {
+	return processOperations(&processWrapper{conn}, actions...)
 }
 
 type processWrapper struct {

@@ -61,13 +61,11 @@ type closer interface {
 	close()
 }
 
-type Actions []Action
-
-type Action interface {
+type action interface {
 	apply(binder) error
 }
 
-func processOperations(channeler bindChanneler, actions Actions) error {
+func processOperations(channeler bindChanneler, actions ...action) error {
 	ch, err := channeler.channel()
 	if err != nil {
 		return errors.Wrap(err, channelError)
