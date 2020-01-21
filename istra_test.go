@@ -20,7 +20,7 @@ const (
 
 func Test_consumeQueue(t *testing.T) {
 
-	t.Run("test consumer() is called", func(t *testing.T) {
+	t.Run("test_consumer()_is_called", func(t *testing.T) {
 		closeChan := make(chan *amqp.Error)
 		chMock := consumeChannelerMock{ch: &consumerMock{}}
 		conn := &connectionMock{consumeChanneler: &chMock, closeChan: closeChan}
@@ -37,14 +37,14 @@ func Test_consumeQueue(t *testing.T) {
 		}
 	})
 
-	t.Run("test consumer() return error", func(t *testing.T) {
+	t.Run("test_consumer()_return_error", func(t *testing.T) {
 		conn := &connectionMock{consumeChanneler: &consumeChannelerMock{err: errors.New("error")}}
 		assertPanic(t, "error creating channel: error", func() {
 			consumeQueue(conn, QueueConf{}, func(d amqp.Delivery) {})
 		})
 	})
 
-	t.Run("test QueueConf passed to consumer.consume(QueueConf)", func(t *testing.T) {
+	t.Run("test_QueueConf_passed_to_consumer.consume(QueueConf)", func(t *testing.T) {
 		closeChan := make(chan *amqp.Error)
 		channel := consumerMock{}
 		conn := &connectionMock{consumeChanneler: &consumeChannelerMock{ch: &channel}, closeChan: closeChan}
@@ -59,7 +59,7 @@ func Test_consumeQueue(t *testing.T) {
 		assertConfig(t, channel.Conf, channelName, true, true, true, true)
 	})
 
-	t.Run("test default QueueConf is passed", func(t *testing.T) {
+	t.Run("test_default_QueueConf_is_passed", func(t *testing.T) {
 		closeChan := make(chan *amqp.Error)
 		channel := consumerMock{}
 		conn := &connectionMock{consumeChanneler: &consumeChannelerMock{ch: &channel}, closeChan: closeChan}
@@ -74,7 +74,7 @@ func Test_consumeQueue(t *testing.T) {
 		assertConfig(t, channel.Conf, channelName, false, false, false, false)
 	})
 
-	t.Run("test consume() return error", func(t *testing.T) {
+	t.Run("test_consume()_return_error", func(t *testing.T) {
 		conn := &connectionMock{consumeChanneler: &consumeChannelerMock{ch: &consumerMock{err: errors.New("error")}}}
 
 		assertPanic(t, "error consuming testQueue: error", func() {
@@ -82,7 +82,7 @@ func Test_consumeQueue(t *testing.T) {
 		})
 	})
 
-	t.Run("test deliveries processing", func(t *testing.T) {
+	t.Run("test_deliveries_processing", func(t *testing.T) {
 		deliveries := make(chan amqp.Delivery)
 		closeChan := make(chan *amqp.Error)
 		channel := consumerMock{msgChan: deliveries}
@@ -109,7 +109,7 @@ func Test_consumeQueue(t *testing.T) {
 
 func Test_QueueBind(t *testing.T) {
 
-	t.Run("test processOperations() returns error", func(t *testing.T) {
+	t.Run("test_processOperations()_returns_error", func(t *testing.T) {
 		closer := &binderMock{}
 		err := processOperations(&bindChannelMock{err: errors.New("error"), b: &binderMock{}}, Bind{})
 
@@ -123,10 +123,10 @@ func Test_QueueBind(t *testing.T) {
 		}
 	})
 
-	t.Run("test consumer() and close() are called", func(t *testing.T) {
+	t.Run("test_consumer()_and_close()_are_called", func(t *testing.T) {
 		closer := &binderMock{}
 		chMock := &bindChannelMock{b: closer}
-		err := processOperations(chMock, Bind{})
+		err := processOperations(chMock)
 
 		if err != nil {
 			t.Errorf("didn't expect error, got '%v'", err)
@@ -143,7 +143,7 @@ func Test_QueueBind(t *testing.T) {
 		}
 	})
 
-	t.Run("test processOperations()", func(t *testing.T) {
+	t.Run("test_processOperations()", func(t *testing.T) {
 		d := QueueDeclare{}
 		bindErrorQueue := Bind{Exchange: "testExchange", Queue: "errorQueue", Topic: "*.ERROR"}
 		bindWarningQueue := Bind{Exchange: "testExchange", Queue: "warningQueue", Topic: "*.WARNING"}
@@ -168,7 +168,7 @@ func Test_QueueBind(t *testing.T) {
 		}
 	})
 
-	t.Run("test processOperations() return error", func(t *testing.T) {
+	t.Run("test_processOperations()_return_error", func(t *testing.T) {
 		err := errors.New("error")
 		dQueue := "d testQueue"
 		tests := []struct {
@@ -179,9 +179,9 @@ func Test_QueueBind(t *testing.T) {
 			unbindErr  error
 			wantCalls  []string
 		}{
-			{"test testQueue() return error", []action{QueueDeclare{Name: dQueue}, Bind{}}, nil, err, nil, []string{declare, closeMethod}},
-			{"test bind() return error", []action{QueueDeclare{}, Bind{Queue: "b testQueue"}, Bind{}}, err, nil, nil, []string{declare, bind, closeMethod}},
-			{"test unbind() return error", []action{QueueDeclare{}, Bind{}, UnBind{Queue: "u testQueue"}, Bind{}}, nil, nil, err, []string{declare, bind, unbind, closeMethod}},
+			{"test_testQueue()_return_error", []action{QueueDeclare{Name: dQueue}, Bind{}}, nil, err, nil, []string{declare, closeMethod}},
+			{"test_bind()_return_error", []action{QueueDeclare{}, Bind{Queue: "b testQueue"}, Bind{}}, err, nil, nil, []string{declare, bind, closeMethod}},
+			{"test_unbind()_return_error", []action{QueueDeclare{}, Bind{}, UnBind{Queue: "u testQueue"}, Bind{}}, nil, nil, err, []string{declare, bind, unbind, closeMethod}},
 		}
 
 		for _, tt := range tests {
