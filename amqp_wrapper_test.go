@@ -3,19 +3,23 @@
 package istra
 
 import (
-	"github.com/streadway/amqp"
+	"os"
 	"reflect"
 	"testing"
 )
 
-var dsn = "amqp://guest:guest@localhost:5672/"
-
 const (
 	testQueue    = "testQueue"
 	testExchange = "testExchange"
+	amqp         = "AMQP_URL"
 )
 
 func Test_Integration(t *testing.T) {
+	url := os.Getenv(amqp)
+	if url == "" {
+		t.Fatalf("environment variable 'AMQP_URL' is not set")
+	}
+
 	conn, err := amqp.Dial(dsn)
 	if err != nil {
 		t.Fatalf("didn't expected error, got '%v'", err)
